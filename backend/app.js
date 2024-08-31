@@ -10,13 +10,26 @@ const Goal = require('./models/goal');
 
 const app = express();
 
+// Ensure logs directory exists
+const logsDir = path.join(__dirname, 'logs');
+if (!fs.existsSync(logsDir)) {
+  fs.mkdirSync(logsDir);
+}
+
+// Access log configuration
 const accessLogStream = fs.createWriteStream(
-  path.join(__dirname, 'logs', 'access.log'),
+  path.join(logsDir, 'access.log'),
+  { flags: 'a' }
+);
+app.use(morgan('combined', { stream: accessLogStream }));
+
+// Error log configuration
+const errorLogStream = fs.createWriteStream(
+  path.join(logsDir, 'error.log'),
   { flags: 'a' }
 );
 
-app.use(morgan('combined', { stream: accessLogStream }));
-
+// Middleware
 app.use(bodyParser.json());
 
 app.use((req, res, next) => {
@@ -26,7 +39,8 @@ app.use((req, res, next) => {
   next();
 });
 
-app.get('/goals', async (req, res) => {
+// Routes
+app.get('/goals', async (req, res, next) => {
   console.log('TRYING TO FETCH GOALS');
   try {
     const goals = await Goal.find();
@@ -40,11 +54,12 @@ app.get('/goals', async (req, res) => {
   } catch (err) {
     console.error('ERROR FETCHING GOALS');
     console.error(err.message);
+    errorLogStream.write(`${new Date().toISOString()} - ${err.stack}\n`);
     res.status(500).json({ message: 'Failed to load goals.' });
   }
 });
 
-app.post('/goals', async (req, res) => {
+app.post('/goals', async (req, res, next) => {
   console.log('TRYING TO STORE GOAL');
   const goalText = req.body.text;
 
@@ -64,39 +79,50 @@ app.post('/goals', async (req, res) => {
       .json({ message: 'Goal saved', goal: { id: goal.id, text: goalText } });
     console.log('STORED NEW GOAL');
   } catch (err) {
-    console.error('ERROR FETCHING GOALS');
+    console.error('ERROR SAVING GOAL');
     console.error(err.message);
+    errorLogStream.write(`${new Date().toISOString()} - ${err.stack}\n`);
     res.status(500).json({ message: 'Failed to save goal.' });
   }
 });
 
-app.delete('/goals/:id', async (req, res) => {
+app.delete('/goals/:id', async (req, res, next) => {
   console.log('TRYING TO DELETE GOAL');
   try {
     await Goal.deleteOne({ _id: req.params.id });
     res.status(200).json({ message: 'Deleted goal!' });
     console.log('DELETED GOAL');
   } catch (err) {
-    console.error('ERROR FETCHING GOALS');
+    console.error('ERROR DELETING GOAL');
     console.error(err.message);
+    errorLogStream.write(`${new Date().toISOString()} - ${err.stack}\n`);
     res.status(500).json({ message: 'Failed to delete goal.' });
   }
 });
 
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack); // Log to console
+  errorLogStream.write(`${new Date().toISOString()} - ${err.stack}\n`);
+  res.status(500).send('Something went wrong!');
+});
+
+// MongoDB connection
 mongoose.connect(
-  'mongodb://mongo:MONGO@65.0.98.134:27017/course-goals',
+  'mongodb://172.17.0.2:27017/course-goals',
   {
     useNewUrlParser: true,
     useUnifiedTopology: true,
-  }
-),
+  },
   (err) => {
     if (err) {
       console.error('FAILED TO CONNECT TO MONGODB');
       console.error(err);
     } else {
       console.log('CONNECTED TO MONGODB');
-      app.listen(80);
+      app.listen(80, () => {
+        console.log('Server running on port 80');
+      });
     }
   }
 );
