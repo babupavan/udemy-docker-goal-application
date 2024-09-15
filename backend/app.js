@@ -109,7 +109,7 @@ app.use((err, req, res, next) => {
 
 // MongoDB connection
 mongoose.connect(
-  'mongodb://172.17.0.2:27017/course-goals',
+  'mongodb+srv://admin:admin@database.jt2ok.mongodb.net/?retryWrites=true&w=majority&appName=database/pavankumarreddy-mongo',
   {
     useNewUrlParser: true,
     useUnifiedTopology: true,
