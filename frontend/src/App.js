@@ -14,7 +14,7 @@ function App() {
       setIsLoading(true);
 
       try {
-        const response = await fetch('http://13.127.216.162:80/goals');
+        const response = await fetch('http://goalbackend-mern-application.ap-south-1.elasticbeanstalk.com/goals');
 
         const resData = await response.json();
 
@@ -39,7 +39,7 @@ function App() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://13.127.216.162:80/goals', {
+      const response = await fetch('http://goalbackend-mern-application.ap-south-1.elasticbeanstalk.com/goals', {
         method: 'POST',
         body: JSON.stringify({
           text: goalText,
@@ -78,7 +78,7 @@ function App() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://13.127.216.162:80/goals/' + goalId, {
+      const response = await fetch('http://goalbackend-mern-application.ap-south-1.elasticbeanstalk.com/goals/' + goalId, {
         method: 'DELETE',
       });
 
